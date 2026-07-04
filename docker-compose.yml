@@ -1,0 +1,26 @@
+services:
+  # 1. The Core MongoDB Database Server
+  mongo:
+    image: mongo:latest
+    container_name: local-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    restart: always
+
+  # 2. The Web-based MongoDB Compass Interface
+  compass-web:
+    image: haohanyang/compass-web:latest
+    container_name: compass-browser
+    environment:
+      # Tells Compass Web to automatically look for the 'mongo' service inside Docker
+      - CW_MONGO_URI=mongodb://mongo:27017
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mongo
+    restart: always
+
+volumes:
+  mongo-data:
