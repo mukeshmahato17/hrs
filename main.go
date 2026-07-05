@@ -13,8 +13,9 @@ import (
 )
 
 const dburi = "mongodb://localhost:27017"
-const dbname = "hotel-reservation"
-const users = "users"
+
+// const dbname = "hotel-reservation"
+// const users = "users"
 
 func main() {
 	// Creates a new client and connects to the server
@@ -28,8 +29,10 @@ func main() {
 
 	app := fiber.New()
 	apiv1 := app.Group("api/v1")
-
 	handleUser := api.NewHandleUserStore(db.NewMongoDBStore(client))
+
+	apiv1.Put("/user/:id", handleUser.HandlePutUser)
+	apiv1.Delete("/user/:id", handleUser.HandleDeleteUser)
 	apiv1.Get("/user/:id", handleUser.HandleUser)
 	apiv1.Get("/users", handleUser.HandleUsers)
 	apiv1.Post("/user", handleUser.HandleUserPost)
