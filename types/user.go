@@ -19,15 +19,15 @@ const (
 var EmailRegexp = regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
 
 type CreateUserParams struct {
-	FirstName string `json: "firstName"`
-	LastName  string `json: "lastName"`
-	Email     string `json: "email"`
-	Password  string `json: "password"`
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+	Email     string `json:"email"`
+	Password  string `json:"password"`
 }
 
 type UpdateUserParams struct {
-	FirstName string `json: "firstName"`
-	LastName  string `json: "lastName"`
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
 }
 
 func (p *UpdateUserParams) ToBSON() bson.M {
@@ -65,11 +65,11 @@ func IsValidEmail(email string) bool {
 }
 
 type User struct {
-	ID                primitive.ObjectID `bson:"_id,omitempty", json: "id,omitempty"`
-	FirstName         string             `bson: "firstName", json: "firstName"`
-	LastName          string             `bson: "lastName", json: "lastName"`
-	Email             string             `bson: "email", json: "email"`
-	EncryptedPassword string             `bson: "EncryptedPassword", json: "-"`
+	ID                primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
+	FirstName         string             `bson:"firstName" json:"firstName"`
+	LastName          string             `bson:"lastName" json:"lastName"`
+	Email             string             `bson:"email" json:"email"`
+	EncryptedPassword string             `bson:"EncryptedPassword" json:"-"`
 }
 
 func NewUserFromParams(params CreateUserParams) (*User, error) {

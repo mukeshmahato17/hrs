@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/mukeshmahato17/hrs/types"
 	"go.mongodb.org/mongo-driver/bson"
@@ -11,10 +12,16 @@ import (
 
 const userColl = "users"
 
+type Dropper interface {
+	Drop(context.Context) error
+}
+
 type UserStore interface {
+	Dropper
+
 	GetUserByID(context.Context, string) (*types.User, error)
 	GetUsers(context.Context) ([]*types.User, error)
-	InsertUser(context.Context, types.User) (*types.User, error)
+	InsertUser(context.Context, *types.User) (*types.User, error)
 	DeleteUser(context.Context, string) error
 	UpdateUser(ctx context.Context, filter bson.M, params types.UpdateUserParams) error
 }
@@ -24,15 +31,22 @@ type MongoDBStore struct {
 	coll   *mongo.Collection
 }
 
-func NewMongoDBStore(client *mongo.Client) *MongoDBStore {
+func NewMongoDBStore(client *mongo.Client, dbname string) *MongoDBStore {
 	return &MongoDBStore{
 		client: client,
-		coll:   client.Database(DBNAME).Collection(userColl),
+		coll:   client.Database(dbname).Collection(userColl),
 	}
 }
 
-func (s *MongoDBStore) UpdateUser(ctx context.Context, filter bson.M, params types.UpdateUserParams) error {
+func (s *MongoDBStore) Drop(ctx context.Context) error {
+	fmt.Println("---dropping user collection")
+	if err := s.coll.Drop(ctx); err != nil {
+		return err
+	}
+	return nil
+}
 
+func (s *MongoDBStore) UpdateUser(ctx context.Context, filter bson.M, params types.UpdateUserParams) error {
 	update := bson.M{
 		"$set": params.ToBSON(),
 	}
@@ -56,7 +70,7 @@ func (s *MongoDBStore) DeleteUser(ctx context.Context, id string) error {
 	return nil
 }
 
-func (s *MongoDBStore) InsertUser(ctx context.Context, user types.User) (*types.User, error) {
+func (s *MongoDBStore) InsertUser(ctx context.Context, user *types.User) (*types.User, error) {
 	res, err := s.coll.InsertOne(ctx, user)
 	if err != nil {
 		return nil, err
@@ -66,7 +80,7 @@ func (s *MongoDBStore) InsertUser(ctx context.Context, user types.User) (*types.
 		user.ID = objId
 	}
 
-	return &user, nil
+	return user, nil
 }
 
 func (s *MongoDBStore) GetUsers(ctx context.Context) ([]*types.User, error) {
