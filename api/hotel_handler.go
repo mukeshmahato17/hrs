@@ -23,7 +23,7 @@ func (h *HotelHandler) HandleGetRooms(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	filter := bson.M{"hotel_id": oid}
+	filter := bson.M{"hotelID": oid}
 	rooms, err := h.store.Room.GetRooms(c.Context(), filter)
 	if err != nil {
 		return err
