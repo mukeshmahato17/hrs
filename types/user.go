@@ -46,7 +46,7 @@ func (p *UpdateUserParams) ToBSON() bson.M {
 }
 
 func (params CreateUserParams) Validate() map[string]string {
-	var errors map[string]string
+	errors := make(map[string]string)
 	if len(params.FirstName) < minFirstNameLen {
 		errors["firstName"] = fmt.Sprintf("first name length should be at least %d characters", minFirstNameLen)
 	}
@@ -58,7 +58,7 @@ func (params CreateUserParams) Validate() map[string]string {
 	}
 
 	if !IsValidEmail(params.Email) {
-		errors["email"] = fmt.Sprintf("invalid email")
+		errors["email"] = fmt.Sprintf("email %s invalid email", params.Email)
 	}
 	return errors
 }
@@ -74,6 +74,7 @@ type User struct {
 	LastName          string             `bson:"lastName" json:"lastName"`
 	Email             string             `bson:"email" json:"email"`
 	EncryptedPassword string             `bson:"EncryptedPassword" json:"-"`
+	IsAdmin           bool               `bson:"isAdmin" json:"isAdmin"`
 }
 
 func NewUserFromParams(params CreateUserParams) (*User, error) {

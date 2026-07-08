@@ -33,14 +33,16 @@ func main() {
 			Room:    roomStore,
 			Booking: bookingstore,
 		}
-		roomHandler = api.NewHandleRoomStore(store)
-		handleHotel = api.NewHandleHotelStore(store)
-		userHandler = api.NewHandleUserStore(db.NewMongoDBStore(client))
-		authHandler = api.NewHandleAuthStore(userStore)
+		bookingHandler = api.NewBookingHandler(*store)
+		roomHandler    = api.NewHandleRoomStore(store)
+		handleHotel    = api.NewHandleHotelStore(store)
+		userHandler    = api.NewHandleUserStore(db.NewMongoDBStore(client))
+		authHandler    = api.NewHandleAuthStore(userStore)
 
 		app   = fiber.New()
 		apiv1 = app.Group("/api/v1", middleware.JWTAuthentication(userStore))
 		auth  = app.Group("/api")
+		admin = apiv1.Group("/admin", middleware.AdminAuth)
 	)
 
 	// auth Handler
@@ -58,7 +60,15 @@ func main() {
 	apiv1.Get("/hotel/:id/rooms", handleHotel.HandleGetRooms)
 	apiv1.Get("/hotel/:id", handleHotel.HandleGetHotelByID)
 
+	// room handlers
 	apiv1.Get("/room", roomHandler.HandleGetRooms)
 	apiv1.Post("/room/:id/book", roomHandler.HandleBookRoom)
+
+	// booking handlers
+	apiv1.Post("/booking/:id/cancel", bookingHandler.HandleCancelBooking)
+	apiv1.Get("/booking/:id", bookingHandler.HandleGetBooking)
+
+	// admin handlers
+	admin.Get("/booking", bookingHandler.HandleGetBookings)
 	log.Fatal(app.Listen(*listenAddr))
 }

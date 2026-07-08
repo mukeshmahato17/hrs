@@ -4,11 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/mukeshmahato17/hrs/authutil"
 	"github.com/mukeshmahato17/hrs/db"
 	"github.com/mukeshmahato17/hrs/types"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -61,27 +61,30 @@ func (h *HandleAuthStore) HandleAuthentication(c *fiber.Ctx) error {
 	if !types.IsValidPassword(user.EncryptedPassword, params.Password) {
 		return invalidCredentials(c)
 	}
-
 	resp := AuthResponse{
 		User:  user,
-		Token: createUserToken(user),
+		Token: CreateUserToken(user),
 	}
 	return c.JSON(resp)
 }
 
-func createUserToken(user *types.User) string {
+func CreateUserToken(user *types.User) string {
 	now := time.Now()
 	expires := now.Add(time.Hour * 4).Unix()
 	claims := jwt.MapClaims{
-		"userID":  user.ID,
+		"userID":  user.ID.Hex(),
 		"email":   user.Email,
 		"expires": expires,
 	}
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	secret := os.Getenv("j")
-	tokenstr, err := token.SignedString([]byte(secret))
+	secret := authutil.JWTSecret()
+
+	tokenStr, err := token.SignedString([]byte(secret))
 	if err != nil {
-		fmt.Println("failed to sign token with secret ", err)
+		fmt.Println("failed to sign token:", err)
+		return ""
 	}
-	return tokenstr
+
+	return tokenStr
 }

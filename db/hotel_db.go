@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/mukeshmahato17/hrs/types"
 	"go.mongodb.org/mongo-driver/bson"
@@ -51,6 +52,10 @@ func (s *MongoHotelStore) GetHotels(ctx context.Context, filter bson.M) ([]*type
 }
 
 func (s *MongoHotelStore) Update(ctx context.Context, filter, update bson.M) error {
+	if len(update) == 0 {
+		return fmt.Errorf("update document must not be empty")
+	}
+
 	_, err := s.coll.UpdateOne(ctx, filter, update)
 	return err
 }

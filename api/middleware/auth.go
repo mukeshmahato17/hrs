@@ -2,36 +2,56 @@ package middleware
 
 import (
 	"fmt"
-	"os"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/mukeshmahato17/hrs/authutil"
 	"github.com/mukeshmahato17/hrs/db"
 )
 
 func JWTAuthentication(userStore db.UserStore) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		tokens, ok := c.GetReqHeaders()["X-Api-Token"]
-		if !ok {
+		token := c.Get("X-Api-Token")
+		if token == "" {
+			authorization := c.Get("Authorization")
+			if strings.HasPrefix(authorization, "Bearer ") {
+				token = strings.TrimSpace(strings.TrimPrefix(authorization, "Bearer "))
+			}
+		}
+		if token == "" {
 			return fmt.Errorf("unauthorized")
 		}
-		token := tokens[0]
 		claims, err := validateToken(token)
 		if err != nil {
 			return err
 		}
-		expiresFloat := claims["expires"].(float64)
-		expires := int64(expiresFloat)
-		// check token expiration
-		if time.Now().Unix() > expires {
+
+		expiresValue, ok := claims["expires"]
+		if !ok {
+			return fmt.Errorf("unauthorized")
+		}
+		expiresFloat, ok := expiresValue.(float64)
+		if !ok {
+			return fmt.Errorf("unauthorized")
+		}
+		if time.Now().Unix() > int64(expiresFloat) {
 			return fmt.Errorf("token expired")
 		}
 
-		userID := claims["userID"].(string)
+		userIDValue, ok := claims["userID"]
+		if !ok {
+			return fmt.Errorf("unauthorized")
+		}
+		userID, ok := userIDValue.(string)
+		if !ok || userID == "" {
+			return fmt.Errorf("unauthorized")
+		}
+
 		user, err := userStore.GetUserByID(c.Context(), userID)
 		if err != nil {
-			fmt.Errorf("unauthorized")
+			return fmt.Errorf("unauthorized")
 		}
 
 		c.Context().SetUserValue("user", user)
@@ -45,7 +65,7 @@ func validateToken(tokenStr string) (jwt.MapClaims, error) {
 			fmt.Println("imvalid signing method", token.Header["alg"])
 			return nil, fmt.Errorf("unauthorized")
 		}
-		secret := os.Getenv("JWT_SECRET")
+		secret := authutil.JWTSecret()
 		return []byte(secret), nil
 	})
 	if err != nil {
