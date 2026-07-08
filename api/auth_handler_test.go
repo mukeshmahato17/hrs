@@ -2,7 +2,6 @@ package api
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -11,38 +10,20 @@ import (
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/mukeshmahato17/hrs/db"
-	"github.com/mukeshmahato17/hrs/types"
+	"github.com/mukeshmahato17/hrs/db/fixture"
 )
-
-func InsertTestUser(t *testing.T, userStore db.UserStore) *types.User {
-	user, err := types.NewUserFromParams(types.CreateUserParams{
-		FirstName: "Foo",
-		LastName:  "Bar",
-		Email:     "email@gmail.com",
-		Password:  "password",
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = userStore.InsertUser(context.TODO(), user)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return user
-}
 
 func TestAuthenticationFailure(t *testing.T) {
 	tbd := setup(t)
-	InsertTestUser(t, tbd.UserStore)
 	defer tbd.teardown(t)
+	fixture.AddUser(tbd.Store, "foo", "bar", false)
 
 	app := fiber.New()
-	authHandler := NewHandleAuthStore(tbd.UserStore)
+	authHandler := NewHandleAuthStore(tbd.User)
 	app.Post("/auth", authHandler.HandleAuthentication)
 
 	params := AuthParams{
-		Email:    "email@gmail.com",
+		Email:    "foo@bar.com",
 		Password: "wrongpassword",
 	}
 
@@ -74,16 +55,17 @@ func TestAuthenticationFailure(t *testing.T) {
 
 func TestAuthenticationSucess(t *testing.T) {
 	tbd := setup(t)
-	insertedUser := InsertTestUser(t, tbd.UserStore)
 	defer tbd.teardown(t)
+	// insertedUser := InsertTestUser(t, tbd.User)
+	insertedUser := fixture.AddUser(tbd.Store, "foo", "bar", false)
 
 	app := fiber.New()
-	authHandler := NewHandleAuthStore(tbd.UserStore)
+	authHandler := NewHandleAuthStore(tbd.User)
 	app.Post("/auth", authHandler.HandleAuthentication)
 
 	params := AuthParams{
-		Email:    "email@gmail.com",
-		Password: "password",
+		Email:    "foo@bar.com",
+		Password: "foo_bar",
 	}
 
 	b, _ := json.Marshal(params)
